@@ -5,9 +5,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "client_login.h"
-#include "client_admin.h"
-#include "client_user.h"
+#include "include/client_login.h"
+#include "include/client_admin.h"
+#include "include/client_user.h"
 
 #define PORT 8080
 

@@ -6,9 +6,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "server.h"
-#include "server_admin.h"
-#include "locking.h"
+#include "include/server.h"
+#include "include/server_admin.h"
+#include "include/locking.h"
 
 
 void add_book(int client_socket) {
@@ -42,7 +42,7 @@ void add_book(int client_socket) {
     new_book.deleted = 0;
 
     // Open the file with write permission and create if not exists
-    if ((fd = open("books.bin", O_RDWR | O_CREAT, 0644)) == -1) {
+    if ((fd = open(BOOKS_FILE, O_RDWR | O_CREAT, 0644)) == -1) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
@@ -88,7 +88,7 @@ void delete_book(int client_socket) {
     strncpy(name, token, MAX_BOOK_SIZE);
 
     // Open the file with read-write permission
-    if ((fd = open("books.bin", O_RDWR)) == -1) {
+    if ((fd = open(BOOKS_FILE, O_RDWR)) == -1) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
@@ -132,7 +132,7 @@ void search_book(int client_socket) {
     int found = 0;
 
     // Open the file with read-write permission
-    if ((fd = open("books.bin", O_RDWR)) == -1) {
+    if ((fd = open(BOOKS_FILE, O_RDWR)) == -1) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
@@ -182,7 +182,7 @@ void update_book(int client_socket) {
     int found = 0;
 
     // Open the main book file with read-write permission
-    if ((fd_books = open("books.bin", O_RDWR)) == -1) {
+    if ((fd_books = open(BOOKS_FILE, O_RDWR)) == -1) {
         perror("Error opening main book file");
         exit(EXIT_FAILURE);
     }
@@ -298,7 +298,7 @@ void update_user(int client_socket) {
     strncpy(password, token, MAX_PWD_LENGTH);
 
     // Open the user file with read-write permission
-    if ((fd = open("users.bin", O_RDWR)) == -1) {
+    if ((fd = open(USERS_FILE, O_RDWR)) == -1) {
         perror("Error opening user file");
         exit(EXIT_FAILURE);
     }
@@ -371,7 +371,7 @@ void borrow_book(int client_socket){
     strncpy(name, token, MAX_PHONE_LENGTH);
 
     // Open the file with read permission
-    if ((fd = open("users.bin", O_RDONLY)) == -1) {
+    if ((fd = open(USERS_FILE, O_RDONLY)) == -1) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
@@ -400,7 +400,7 @@ void borrow_book(int client_socket){
 
     // check if book is available
     // Open the file with read-write permission
-    if ((fd = open("books.bin", O_RDWR)) == -1) {
+    if ((fd = open(BOOKS_FILE, O_RDWR)) == -1) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
@@ -435,7 +435,7 @@ void borrow_book(int client_socket){
         return;
     }
 
-    if ((fd = open("borrows.bin", O_RDWR | O_CREAT | O_APPEND, 0644)) == -1) {
+    if ((fd = open(BORROWS_FILE, O_RDWR | O_CREAT | O_APPEND, 0644)) == -1) {
         perror("Error opening borrows file");
         exit(EXIT_FAILURE);
     }
@@ -485,7 +485,7 @@ void return_book(int client_socket) {
     strncpy(name, token, MAX_BOOK_SIZE);
 
     // Open the borrows file with read-write permission
-    if ((fd_borrows = open("borrows.bin", O_RDWR)) == -1) {
+    if ((fd_borrows = open(BORROWS_FILE, O_RDWR)) == -1) {
         perror("Error opening borrows file");
         exit(EXIT_FAILURE);
     }
@@ -519,7 +519,7 @@ void return_book(int client_socket) {
     }
 
     // Open the books file with read-write permission
-    if ((fd_books = open("books.bin", O_RDWR)) == -1) {
+    if ((fd_books = open(BOOKS_FILE, O_RDWR)) == -1) {
         perror("Error opening books file");
         exit(EXIT_FAILURE);
     }

@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "client.h"
+#include "include/client.h"
 #include <unistd.h>
-#include "server_login.h"
+#include "include/server_login.h"
 
 void print_menu(){
     printf("************************************\n");

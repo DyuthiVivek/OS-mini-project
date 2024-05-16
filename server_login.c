@@ -6,8 +6,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include "server_login.h"
-#include "locking.h"
+#include "include/server_login.h"
+#include "include/locking.h"
+#include "include/server.h"
 
 int create_user(char *name, char *phone, char *password) {
     User user;

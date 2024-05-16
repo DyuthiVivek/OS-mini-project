@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "client.h"
-#include "server_admin.h"
+#include "include/client.h"
+#include "include/server_admin.h"
 
 void print_admin_menu(){
 

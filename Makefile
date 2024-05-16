@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -Iinclude
 
 # Client compilation
 client: client.c client_admin.c client_login.c client_user.c

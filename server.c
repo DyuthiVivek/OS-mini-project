@@ -5,8 +5,9 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "server_admin.h"
-#include "server_user.h"
+#include "include/server_admin.h"
+#include "include/server_user.h"
+#include "include/server.h"
 
 #define PORT 8080
 #define MAX_CLIENTS 100

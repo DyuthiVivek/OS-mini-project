@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "locking.h"
-#include "server_admin.h"
+#include "include/locking.h"
+#include "include/server_admin.h"
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "server_user.h"
+#include "include/server_user.h"
 #include <unistd.h>
-#include "server.h"
+#include "include/server.h"
 #include <string.h>
 
 
