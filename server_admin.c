@@ -433,6 +433,7 @@ void borrow_book(int client_socket){
         release_lock(fd);
         close(fd);
         write(client_socket, "2", 1);
+        return;
     }
 
     if ((fd = open("borrows.bin", O_RDWR | O_CREAT | O_APPEND, 0644)) == -1) {
@@ -459,13 +460,108 @@ void borrow_book(int client_socket){
     write(client_socket, "0", 1);
 }
 
+void return_book(int client_socket) {
+    int fd_books, fd_borrows;
+    Book book;
+    Borrow borrow;
+
+    char name[MAX_BOOK_SIZE], username[MAX_NAME_LENGTH];
+    char buffer[MAX_NAME_LENGTH + MAX_BOOK_SIZE + 2];
+
+    read(client_socket, buffer, MAX_NAME_LENGTH + MAX_BOOK_SIZE + 2);
+
+    // Tokenize the received message to extract details
+    char *token = strtok(buffer, ":");
+    if (token == NULL) {
+        fprintf(stderr, "Error: Malformed details received from client.\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(username, token, MAX_NAME_LENGTH);
+
+    token = strtok(NULL, ":");
+    if (token == NULL) {
+        fprintf(stderr, "Error: Malformed details received from client.\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(name, token, MAX_BOOK_SIZE);
+
+    // Open the borrows file with read-write permission
+    if ((fd_borrows = open("borrows.bin", O_RDWR)) == -1) {
+        perror("Error opening borrows file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Acquire write lock before modifying the borrow records
+    acquire_lock(fd_borrows, F_WRLCK);
+
+    // Search for the borrow record by username and book name with returned = 0
+    int borrow_found = 0;
+    while (read(fd_borrows, &borrow, sizeof(Borrow)) > 0) {
+        if (strcmp(borrow.username, username) == 0 && strcmp(borrow.bookname, name) == 0 && borrow.returned == 0) {
+            borrow_found = 1;
+            borrow.returned = 1;
+            lseek(fd_borrows, -sizeof(Borrow), SEEK_CUR); // Move back to the beginning of the record
+            if (write(fd_borrows, &borrow, sizeof(Borrow)) == -1) {
+                perror("Error updating borrow record");
+                release_lock(fd_borrows);
+                close(fd_borrows);
+                exit(EXIT_FAILURE);
+            }
+            break;
+        }
+    }
+
+    release_lock(fd_borrows);
+    close(fd_borrows);
+
+    if (!borrow_found) {
+        write(client_socket, "1", 1); // Borrow record not found
+        return;
+    }
+
+    // Open the books file with read-write permission
+    if ((fd_books = open("books.bin", O_RDWR)) == -1) {
+        perror("Error opening books file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Acquire write lock before modifying the book records
+    acquire_lock(fd_books, F_WRLCK);
+
+    // Search for the book by name and update the number of copies
+    int book_found = 0;
+    while (read(fd_books, &book, sizeof(Book)) > 0) {
+        if (strcmp(book.name, name) == 0 && book.deleted == 0) {
+            book_found = 1;
+            book.num_copies += 1;
+            lseek(fd_books, -sizeof(Book), SEEK_CUR); // Move back to the beginning of the record
+            if (write(fd_books, &book, sizeof(Book)) == -1) {
+                perror("Error updating book record");
+                release_lock(fd_books);
+                close(fd_books);
+                exit(EXIT_FAILURE);
+            }
+            break;
+        }
+    }
+
+    // Release lock after modification
+    release_lock(fd_books);
+    close(fd_books);
+
+    if (book_found) {
+        write(client_socket, "0", 1); // Success
+    } else {
+        write(client_socket, "2", 1); // Book record not found
+    }
+}
+
 void handle_server_admin(int client_socket, char *name) {
-    printf("Handling server admin\n");
+    // printf("Handling server admin\n");
     char choice[1];
     int exit = 0;
     while(!exit) {
         // Receive choice from server
-        printf("Before read\n");
         read(client_socket, choice, 1);
 
         switch(choice[0] - '0') {
@@ -486,6 +582,9 @@ void handle_server_admin(int client_socket, char *name) {
                 break;
             case 6:
                 borrow_book(client_socket);
+                break;
+            case 7:
+                return_book(client_socket);
                 break;
             case 8:
                 exit = 1;

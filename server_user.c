@@ -13,7 +13,6 @@
 
 
 void view_books(int client_socket) {
-    printf("inside view books\n");
     int fd;
     Book book;
     char *buffer;
@@ -66,12 +65,54 @@ void view_books(int client_socket) {
     release_lock(fd);
     close(fd);
 
-    printf("sending stuff\n");
     // Send the entire buffer to the client
     write(client_socket, buffer, 4096);
 
     // Free the allocated buffer
     free(buffer);
+}
+
+void send_borrowed_books(int client_socket, const char *username) {
+    int fd;
+    Borrow borrow;
+    char buffer[4096]; // Adjust size if necessary
+    int buffer_len = 0;
+
+    // Open the borrows file with read permission
+    if ((fd = open("borrows.bin", O_RDONLY)) == -1) {
+        perror("Error opening borrows file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Acquire read lock before reading
+    acquire_lock(fd, F_RDLCK);
+
+    // Read through the borrow records and collect book names borrowed by the specified user
+    while (read(fd, &borrow, sizeof(Borrow)) > 0) {
+        if (strcmp(borrow.username, username) == 0 && borrow.returned == 0) {
+            int bookname_len = strlen(borrow.bookname);
+            if (buffer_len + bookname_len + 2 > (int)sizeof(buffer)) {
+                fprintf(stderr, "Buffer size exceeded while collecting book names.\n");
+                break;
+            }
+            // Append the book name to the buffer
+            snprintf(buffer + buffer_len, sizeof(buffer) - buffer_len, "%s\n", borrow.bookname);
+            buffer_len += bookname_len + 1;
+        }
+    }
+
+    // Release lock after reading
+    release_lock(fd);
+    close(fd);
+
+    // Send the collected book names to the client
+    if (buffer_len > 0) {
+        buffer[buffer_len] = '\0';
+        write(client_socket, buffer, 4096);
+    }
+    else{
+        write(client_socket, "No books borrowed\n", 19);
+    }
 }
 
 void handle_server_user(int client_socket, char *name) {
@@ -84,6 +125,9 @@ void handle_server_user(int client_socket, char *name) {
             case 1:
                 printf("calling view books\n");
                 view_books(client_socket);
+                break;
+            case 2:
+                send_borrowed_books(client_socket, name);
                 break;
             case 3:
                 exit = 1;

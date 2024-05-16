@@ -103,7 +103,6 @@ void send_borrow_details(int sock){
 void handle_admin(int sock){
     char recv[1];
     int choice;
-    printf("inside hanlde admin\n");
     int exit = 0;
     while(!exit){
         print_admin_menu();
@@ -190,6 +189,23 @@ void handle_admin(int sock){
                     printf("Book not available\n");
                 }
                 break;
+            case 7:
+                write(sock, "7", 1);
+                send_borrow_details(sock);
+
+                read(sock, recv, 1);
+
+                if((recv[0] - '0') == 0){
+                    printf("Book returned!\n");
+                }
+                else if((recv[0] - '0') == 1){
+                    printf("Book not borrowed\n");
+                }
+                else if((recv[0] - '0') == 2){
+                    printf("Error while updating\n");
+                }
+                break;
+
 
             case 8:
                 write(sock, "8", 1);

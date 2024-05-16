@@ -24,7 +24,7 @@ void *handle_client(void *arg) {
 
     while(flag){
         read(client_socket, buffer, 1);
-        printf("option: %d\n", buffer[0] - '0');
+        // printf("option: %d\n", buffer[0] - '0');
         int option = buffer[0] - '0';
 
         // authenicate admin or user
@@ -40,12 +40,8 @@ void *handle_client(void *arg) {
             else
                 ret = authenticate(name, password, USERS_FILE);
 
-            //sprintf(return_buffer, "%d", ret);
             return_buffer[0] = ret + '0';
             
-            //printf("return buffer: %s\n", return_buffer);
-
-            // printf("ret %d, return buffer %s\n", ret, return_buffer);
             write(client_socket, return_buffer, 1);
 
             if (ret == 0){
@@ -91,83 +87,6 @@ void *handle_client(void *arg) {
 
         }
 
-        // switch (buffer[0] - '0')
-        // {
-        //     case 1:
-        //         read(client_socket, message, sizeof(message)); // Read combined message
-        //         token = strtok(message, ":"); // Tokenize the message using separator
-        //         name = token;
-        //         token = strtok(NULL, ":");
-        //         password = token;
-
-        //         ret = authenticate_admin(name, password);
-
-        //         //sprintf(return_buffer, "%d", ret);
-        //         return_buffer[0] = ret + '0';
-
-        //         // printf("ret %d, return buffer %s\n", ret, return_buffer);
-        //         write(client_socket, return_buffer, strlen(return_buffer));
-
-        //         if (ret == 0){
-        //             handle_server_admin(client_socket);
-        //             flag = 0;
-        //         }
-        //         break;
-
-        //     case 2:
-        //         read(client_socket, message, sizeof(message)); // Read combined message
-        //         token = strtok(message, ":"); // Tokenize the message using separator
-        //         name = token;
-        //         token = strtok(NULL, ":");
-        //         password = token;
-
-        //         ret = authenticate_user(name, password);
-
-        //         //sprintf(return_buffer, "%d", ret);
-        //         return_buffer[0] = '0' + ret;
-
-        //         // printf("ret %d, return buffer %s\n", ret, return_buffer);
-        //         write(client_socket, return_buffer, strlen(return_buffer));
-
-        //         if (ret == 0){
-        //             handle_server_user(client_socket);
-        //             flag = 0;
-        //         }
-        //         break;
-        //     case 3:
-
-        //         read(client_socket, message_create_user, sizeof(message_create_user)); // Read combined message
-        //         printf("read from client\n");
-
-        //         char name[MAX_NAME_LENGTH];
-        //         char phone[MAX_PHONE_LENGTH];
-        //         char password[MAX_PWD_LENGTH];
-
-        //         token = strtok(message_create_user, ":"); // Tokenize the message using separator
-        //         if (token != NULL) {
-        //             strncpy(name, token, MAX_NAME_LENGTH - 1);
-        //             name[MAX_NAME_LENGTH - 1] = '\0'; // Ensure null-termination
-        //         }
-        //         token = strtok(NULL, ":");
-        //         if (token != NULL) {
-        //             strncpy(phone, token, MAX_PHONE_LENGTH - 1);
-        //             phone[MAX_PHONE_LENGTH - 1] = '\0'; // Ensure null-termination
-        //         }
-        //         token = strtok(NULL, ":");
-        //         if (token != NULL) {
-        //             strncpy(password, token, MAX_PWD_LENGTH - 1);
-        //             password[MAX_PWD_LENGTH - 1] = '\0'; // Ensure null-termination
-        //         }
-
-        //         // printf("calling create user\n");
-        //         ret = create_user(name, phone, password);
-        //         sprintf(return_buffer, "%d", ret);
-        //         write(client_socket, return_buffer, strlen(return_buffer));
-
-        //         break;
-        //     default:
-        //         break;
-        // }
     }
 
     printf("One connection closed\n");

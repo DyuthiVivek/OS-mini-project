@@ -33,44 +33,7 @@ int login(int sock){
         if (choice >= 1 && choice <= 3){
             message[0] = '0' + choice;
             write(sock, message, 1);
-            // sprintf(message, "%d", choice);
-            // send_to_server(message);
-
-            // if (choice == 1 || choice == 2){
-            //     printf("Enter name: ");
-            //     fgets(name, MAX_NAME_LENGTH, stdin);
-            //     name[strcspn(name, "\n")] = 0; // Remove trailing newline
-
-
-            //     printf("Enter password: ");
-            //     fgets(password, MAX_PWD_LENGTH, stdin);
-            //     password[strcspn(password, "\n")] = 0; // Remove trailing newline
-                
-            //     sprintf(message_to_send, "%s:%s:", name, password);
-
-            //     write(sock, message_to_send, strlen(message_to_send));
-            //     read(sock, buffer, 1);
-                
-            //     // printf("buffer %s\n", buffer);
-            //     ret = buffer[0] - '0';
-
-            //     // printf("ret : %d\n", ret);
-            //     if(ret == LOGIN_SUCCESS){
-            //         printf("Authenticated succesfully!\n");
-            //         return choice;
-            //     }
-            //     else{
-            //         if(ret == PASSWORD_MISMATCH){
-            //             printf("Your password did not match!\n");
-
-            //         }
-            //         else if(ret == USER_NOT_FOUND){
-            //             printf("This user does not exist!\n");
-            //         }
-            //         continue;
-            //     }
-
-            // }
+ 
             if (choice == 1 || choice == 2){
                 printf("Enter name: ");
                 fgets(name, MAX_NAME_LENGTH, stdin);
@@ -84,19 +47,12 @@ int login(int sock){
                 sprintf(message_to_send, "%s:%s:", name, password);
 
                 write(sock, message_to_send, strlen(message_to_send));
-                printf("before read\n");
                 read(sock, buffer, 1);
 
-                printf("after read\n");
-                // send_to_server(message_to_send);
-                // recv_from_server(buffer, 2);
-                
-                // printf("buffer %s\n", buffer);
                 ret = buffer[0] - '0';
 
-                // printf("ret : %d\n", ret);
                 if(ret == LOGIN_SUCCESS){
-                    printf("Authenticated user succesfully!\n");
+                    printf("Authenticated succesfully!\n");
                     return choice;
                 }
 

@@ -39,14 +39,11 @@ int main() {
     }
 
     from_server = login(sock);
-    printf("back from login function\n");
     switch(from_server){
         case 1:
-            printf("admin login successful\n");
             handle_admin(sock);
             break;
         case 2:
-            printf("user login successful\n");
             handle_user(sock);
             break;
         case 0:
