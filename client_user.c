@@ -6,9 +6,8 @@
 void print_user_menu(){
     printf("************************************\n");
     printf("1. View books\n");
-    printf("2. Request to borrow a book\n");
-    printf("3. Return a book\n");
-    printf("4. Logout\n");
+    printf("2. View borrowed books\n");
+    printf("3. Logout\n");
     printf("************************************\n\n");
 
     printf("Enter choice: ");
@@ -18,7 +17,7 @@ void print_user_menu(){
 void view_books(int sock) {
     char buffer[4096]; // Increase buffer size to handle larger data
 
-    printf("Books available:\n");
+    printf("Books:\n");
 
     // Receive the entire message from the server
     read(sock, buffer, sizeof(buffer));
@@ -29,7 +28,8 @@ void view_books(int sock) {
 
 void handle_user(int sock){
     int choice;
-    while(1){
+    int exit = 0;
+    while(!exit){
         print_user_menu();
         scanf("%d", &choice);
         getchar();
@@ -37,8 +37,19 @@ void handle_user(int sock){
             case 1:
                 write(sock, "1", 1);
                 view_books(sock);
-
                 break;
+            case 2:
+                write(sock, "2", 1);
+                view_books(sock);
+                break;
+            case 3:
+                write(sock, "3", 1);
+                printf("Quitting\n");
+                exit = 1;
+                break;
+            default:
+                printf("Invalid choice. Try again.");
+
         }
     }
 }

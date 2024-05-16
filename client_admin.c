@@ -89,7 +89,8 @@ void handle_admin(int sock){
     char recv[1];
     int choice;
     printf("inside hanlde admin\n");
-    while(1){
+    int exit = 0;
+    while(!exit){
         print_admin_menu();
         scanf("%d", &choice);
         getchar();
@@ -157,6 +158,11 @@ void handle_admin(int sock){
                 else{
                     printf("User not found\n");
                 }
+                break;
+            case 6:
+                write(sock, "6", 1);
+                printf("Quitting\n");
+                exit = 1;
                 break;
             default:
                 break;

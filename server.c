@@ -10,7 +10,7 @@
 #include "server_user.h"
 
 #define PORT 8080
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 100
 
 void *handle_client(void *arg) {
     int client_socket = *((int *)arg);
@@ -171,6 +171,7 @@ void *handle_client(void *arg) {
         // }
     }
 
+    printf("One connection closed\n");
     close(client_socket);
     return NULL;
 }

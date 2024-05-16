@@ -76,13 +76,17 @@ void view_books(int client_socket) {
 
 void handle_server_user(int client_socket) {
     char choice[1];
-    while(1) {
+    int exit = 0;
+    while(!exit) {
         // Receive choice from server
         read(client_socket, choice, 1);
         switch(choice[0] - '0') {
             case 1:
                 printf("calling view books\n");
                 view_books(client_socket);
+                break;
+            case 3:
+                exit = 1;
                 break;
             default:
                 printf("Invalid choice received from client.\n");

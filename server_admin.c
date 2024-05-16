@@ -353,7 +353,8 @@ void update_user(int client_socket) {
 void handle_server_admin(int client_socket) {
     printf("Handling server admin\n");
     char choice[1];
-    while(1) {
+    int exit = 0;
+    while(!exit) {
         // Receive choice from server
         printf("Before read\n");
         read(client_socket, choice, 1);
@@ -373,6 +374,9 @@ void handle_server_admin(int client_socket) {
                 break;
             case 5:
                 update_user(client_socket);
+                break;
+            case 6:
+                exit = 1;
                 break;
             default:
                 printf("Invalid choice received from client.\n");
