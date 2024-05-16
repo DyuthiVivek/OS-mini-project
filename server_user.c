@@ -74,7 +74,7 @@ void view_books(int client_socket) {
     free(buffer);
 }
 
-void handle_server_user(int client_socket) {
+void handle_server_user(int client_socket, char *name) {
     char choice[1];
     int exit = 0;
     while(!exit) {

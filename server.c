@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "server_handle_login.h"
 #include "server_admin.h"
 #include "server_user.h"
 
@@ -51,9 +50,9 @@ void *handle_client(void *arg) {
 
             if (ret == 0){
                 if (option == 1)
-                    handle_server_admin(client_socket);
+                    handle_server_admin(client_socket, name);
                 else
-                    handle_server_user(client_socket);
+                    handle_server_user(client_socket, name);
                 flag = 0;
             }
 

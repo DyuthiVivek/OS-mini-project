@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include "client.h"
 #include "server_admin.h"
-#include "server_handle_login.h"
 
 void print_admin_menu(){
 
@@ -14,7 +13,9 @@ void print_admin_menu(){
     printf("3. Modify book\n");
     printf("4. Search for book\n");
     printf("5. Modify user details\n");
-    printf("6. Logout\n");
+    printf("6. Lend book to user\n");
+    printf("7. Accept book return from user\n");
+    printf("8. Logout\n");
     printf("************************************\n\n");
 
     printf("Enter choice: ");
@@ -81,9 +82,23 @@ void send_book(int sock) {
 
     // Send message to server
     write(sock, buffer, strlen(buffer));
-
 }
 
+void send_borrow_details(int sock){
+    char name[MAX_BOOK_SIZE], username[MAX_NAME_LENGTH];
+    char buffer[MAX_NAME_LENGTH + MAX_BOOK_SIZE + 2];
+
+    printf("Enter username: ");
+    fgets(username, MAX_NAME_LENGTH, stdin);
+    username[strcspn(username, "\n")] = '\0'; // Remove newline character
+
+    printf("Enter name of the book: ");
+    fgets(name, MAX_BOOK_SIZE, stdin);
+    name[strcspn(name, "\n")] = '\0'; // Remove newline character
+
+    sprintf(buffer, "%s:%s:", username, name);
+    write(sock, buffer, strlen(buffer));
+}
 
 void handle_admin(int sock){
     char recv[1];
@@ -161,6 +176,23 @@ void handle_admin(int sock){
                 break;
             case 6:
                 write(sock, "6", 1);
+                send_borrow_details(sock);
+
+                read(sock, recv, 1);
+
+                if((recv[0] - '0') == 0){
+                    printf("Book borrowed!\n");
+                }
+                else if((recv[0] - '0') == 1){
+                    printf("User not found\n");
+                }
+                else if((recv[0] - '0') == 2){
+                    printf("Book not available\n");
+                }
+                break;
+
+            case 8:
+                write(sock, "8", 1);
                 printf("Quitting\n");
                 exit = 1;
                 break;

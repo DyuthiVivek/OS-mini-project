@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include "server.h"
 #include "server_admin.h"
-#include "server_handle_login.h"
+//#include "server_handle_login.h"
 #include "locking.h"
 
 
@@ -272,11 +272,6 @@ void update_user(int client_socket) {
 
     int found = 0;
 
-    // Open the user file with read-write permission
-    if ((fd = open("users.bin", O_RDWR)) == -1) {
-        perror("Error opening user file");
-        exit(EXIT_FAILURE);
-    }
 
     // Read the details of the user to be updated from the client
     read(client_socket, buffer, MAX_NAME_LENGTH + MAX_PHONE_LENGTH + MAX_PWD_LENGTH + 3);
@@ -285,7 +280,6 @@ void update_user(int client_socket) {
     char *token = strtok(buffer, ":");
     if (token == NULL) {
         fprintf(stderr, "Error: Malformed user details received from client.\n");
-        close(fd);
         exit(EXIT_FAILURE);
     }
     strncpy(username, token, MAX_NAME_LENGTH);
@@ -293,7 +287,6 @@ void update_user(int client_socket) {
     token = strtok(NULL, ":");
     if (token == NULL) {
         fprintf(stderr, "Error: Malformed user details received from client.\n");
-        close(fd);
         exit(EXIT_FAILURE);
     }
     strncpy(phone, token, MAX_PHONE_LENGTH);
@@ -301,11 +294,15 @@ void update_user(int client_socket) {
     token = strtok(NULL, ":");
     if (token == NULL) {
         fprintf(stderr, "Error: Malformed user details received from client.\n");
-        close(fd);
         exit(EXIT_FAILURE);
     }
     strncpy(password, token, MAX_PWD_LENGTH);
 
+    // Open the user file with read-write permission
+    if ((fd = open("users.bin", O_RDWR)) == -1) {
+        perror("Error opening user file");
+        exit(EXIT_FAILURE);
+    }
     // Acquire lock before reading and writing
     acquire_lock(fd, F_WRLCK);
 
@@ -348,9 +345,121 @@ void update_user(int client_socket) {
     }
 }
 
+void borrow_book(int client_socket){
+    int fd;
+    User user;
+    Book book;
+    Borrow borrow;
 
+    char name[MAX_BOOK_SIZE], username[MAX_NAME_LENGTH];
+    char buffer[MAX_NAME_LENGTH + MAX_BOOK_SIZE + 2];
 
-void handle_server_admin(int client_socket) {
+    read(client_socket, buffer, MAX_NAME_LENGTH + MAX_BOOK_SIZE + 2);
+
+    // Tokenize the received message to extract details
+    char *token = strtok(buffer, ":");
+    if (token == NULL) {
+        fprintf(stderr, "Error: Malformed details received from client.\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(username, token, MAX_NAME_LENGTH);
+
+    token = strtok(NULL, ":");
+    if (token == NULL) {
+        fprintf(stderr, "Error: Malformed details received from client.\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(name, token, MAX_PHONE_LENGTH);
+
+    // Open the file with read permission
+    if ((fd = open("users.bin", O_RDONLY)) == -1) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Acquire read lock before reading
+    acquire_lock(fd, F_RDLCK);
+
+    // Search for the user by name
+    int found = 0;
+    while (read(fd, &user, sizeof(User)) > 0) {
+        if (strcmp(user.name, username) == 0) {
+            found = 1;
+            break;
+        }
+    }
+
+    // Release lock after reading
+    release_lock(fd);
+    close(fd);
+
+    // user not found
+    if(found == 0){
+        write(client_socket, "1", 1);
+        return;
+    }
+
+    // check if book is available
+    // Open the file with read-write permission
+    if ((fd = open("books.bin", O_RDWR)) == -1) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    acquire_lock(fd, F_WRLCK);
+    // Search for the book by name
+    int book_found = 0;
+    while (read(fd, &book, sizeof(Book)) > 0) {
+        if (strcmp(book.name, name) == 0 && book.deleted == 0) {
+            book_found = 1;
+            break;
+        }
+    }
+
+    // If book is found and there are copies available, decrement the number of copies
+    if (book_found && book.num_copies > 0) {
+        book.num_copies -= 1;
+        lseek(fd, -sizeof(Book), SEEK_CUR); // Move back to the beginning of the record
+        if (write(fd, &book, sizeof(Book)) == -1) {
+            perror("Error updating book record");
+            release_lock(fd);
+            close(fd);
+            exit(EXIT_FAILURE);
+        }
+        release_lock(fd);
+        close(fd);
+    }
+    else{
+        release_lock(fd);
+        close(fd);
+        write(client_socket, "2", 1);
+    }
+
+    if ((fd = open("borrows.bin", O_RDWR | O_CREAT | O_APPEND, 0644)) == -1) {
+        perror("Error opening borrows file");
+        exit(EXIT_FAILURE);
+    }
+    // Populate the borrow structure
+    strncpy(borrow.username, username, MAX_NAME_LENGTH);
+    strncpy(borrow.bookname, name, MAX_BOOK_SIZE);
+    borrow.returned = 0;
+
+    acquire_lock(fd, F_WRLCK);
+    if (write(fd, &borrow, sizeof(Borrow)) == -1) {
+        perror("Error writing to borrows file");
+        release_lock(fd);
+        close(fd);
+        exit(EXIT_FAILURE);
+    }
+
+    release_lock(fd);
+    close(fd);
+
+    // success
+    write(client_socket, "0", 1);
+}
+
+void handle_server_admin(int client_socket, char *name) {
     printf("Handling server admin\n");
     char choice[1];
     int exit = 0;
@@ -376,6 +485,9 @@ void handle_server_admin(int client_socket) {
                 update_user(client_socket);
                 break;
             case 6:
+                borrow_book(client_socket);
+                break;
+            case 8:
                 exit = 1;
                 break;
             default:
