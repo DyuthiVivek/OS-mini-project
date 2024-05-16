@@ -1,1 +1,0 @@
-void handle_server_user(int client_socket, char *name);
