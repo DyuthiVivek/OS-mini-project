@@ -9,6 +9,13 @@
 #include "../include/server_user.h"
 #include "../include/server.h"
 
+pthread_mutex_t users_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t admins_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t books_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t copies_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t borrows_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 #define PORT 8080
 #define MAX_CLIENTS 100
 
@@ -37,9 +44,9 @@ void *handle_client(void *arg) {
             password = token;
 
             if (option == 1)
-                ret = authenticate(name, password, ADMINS_FILE);
+                ret = authenticate(name, password, ADMINS_FILE, admins_mutex);
             else
-                ret = authenticate(name, password, USERS_FILE);
+                ret = authenticate(name, password, USERS_FILE, users_mutex);
 
             return_buffer[0] = ret + '0';
             
@@ -47,7 +54,7 @@ void *handle_client(void *arg) {
 
             if (ret == 0){
                 if (option == 1)
-                    handle_server_admin(client_socket, name);
+                    handle_server_admin(client_socket);
                 else
                     handle_server_user(client_socket, name);
                 flag = 0;
@@ -59,7 +66,6 @@ void *handle_client(void *arg) {
         else if (option == 3){
 
             read(client_socket, message_create_user, sizeof(message_create_user)); // Read combined message
-            printf("read from client\n");
 
             char name[MAX_NAME_LENGTH];
             char phone[MAX_PHONE_LENGTH];
@@ -81,10 +87,9 @@ void *handle_client(void *arg) {
                 password[MAX_PWD_LENGTH - 1] = '\0'; // Ensure null-termination
             }
 
-            // printf("calling create user\n");
             ret = create_user(name, phone, password);
             return_buffer[0] = ret + '0';
-            write(client_socket, return_buffer, strlen(return_buffer));
+            write(client_socket, return_buffer, 1);
 
         }
 

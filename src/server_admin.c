@@ -8,7 +8,11 @@
 #include <sys/stat.h>
 #include "../include/server.h"
 #include "../include/server_admin.h"
-#include "../include/locking.h"
+#include <pthread.h>
+
+extern pthread_mutex_t users_mutex;
+extern pthread_mutex_t books_mutex;
+extern pthread_mutex_t borrows_mutex;
 
 
 void add_book(int client_socket) {
@@ -46,8 +50,8 @@ void add_book(int client_socket) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
-    // Acquire lock before writing the new record
-    acquire_lock(fd, F_WRLCK);
+    // acquire lock
+    pthread_mutex_lock(&books_mutex);
 
     // Set book ID (assuming it's serially increasing)
     //lseek(fd, 0, SEEK_END);
@@ -56,13 +60,11 @@ void add_book(int client_socket) {
     // Write the new book record to the file
     if ((ret = write(fd, &new_book, sizeof(new_book))) == -1) {
         perror("Error writing to file");
-        release_lock(fd);
         close(fd);
         exit(EXIT_FAILURE);
     }
 
-    // Release lock after writing
-    release_lock(fd);
+    pthread_mutex_unlock(&books_mutex);
     close(fd);
 
     write(client_socket, "1", 1);
@@ -93,7 +95,7 @@ void delete_book(int client_socket) {
         exit(EXIT_FAILURE);
     }
     // Acquire lock before reading and writing
-    acquire_lock(fd, F_WRLCK);
+    pthread_mutex_lock(&books_mutex);
 
     // Search for the book by name and mark it as deleted
     Book temp_book;
@@ -103,7 +105,7 @@ void delete_book(int client_socket) {
             lseek(fd, -sizeof(Book), SEEK_CUR); // Move back to the beginning of the record
             if (write(fd, &temp_book, sizeof(Book)) == -1) {
                 perror("Error updating book record");
-                release_lock(fd);
+                pthread_mutex_unlock(&books_mutex);
                 close(fd);
                 exit(EXIT_FAILURE);
             }
@@ -113,7 +115,7 @@ void delete_book(int client_socket) {
     }
 
     // Release lock after reading and writing
-    release_lock(fd);
+    pthread_mutex_unlock(&books_mutex);
     close(fd);
 
     // Send status back to client
@@ -131,25 +133,24 @@ void search_book(int client_socket) {
 
     int found = 0;
 
+    // Read the name of the book to be deleted from the client
+    read(client_socket, buffer, MAX_BOOK_SIZE + 2);
+    char *token = strtok(buffer, ":");
+    if (token == NULL) {
+        fprintf(stderr, "Error: Malformed book details received from client.\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(name, token, MAX_BOOK_SIZE);
+
     // Open the file with read-write permission
     if ((fd = open(BOOKS_FILE, O_RDWR)) == -1) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
 
-    // Read the name of the book to be deleted from the client
-    read(client_socket, buffer, MAX_BOOK_SIZE + 2);
-    char *token = strtok(buffer, ":");
-    if (token == NULL) {
-        fprintf(stderr, "Error: Malformed book details received from client.\n");
-        release_lock(fd);
-        close(fd);
-        exit(EXIT_FAILURE);
-    }
-    strncpy(name, token, MAX_BOOK_SIZE);
-
     // Acquire lock before reading and writing
-    acquire_lock(fd, F_RDLCK);
+    pthread_mutex_lock(&books_mutex);
+
 
     // Search for the book by name and mark it as deleted
     Book temp_book;
@@ -161,7 +162,7 @@ void search_book(int client_socket) {
     }
 
     // Release lock after reading
-    release_lock(fd);
+    pthread_mutex_unlock(&books_mutex);
     close(fd);
 
     // Send status back to client
@@ -181,11 +182,6 @@ void update_book(int client_socket) {
 
     int found = 0;
 
-    // Open the main book file with read-write permission
-    if ((fd_books = open(BOOKS_FILE, O_RDWR)) == -1) {
-        perror("Error opening main book file");
-        exit(EXIT_FAILURE);
-    }
 
 
     // Read the details of the book to be updated from the client
@@ -195,7 +191,6 @@ void update_book(int client_socket) {
     char *token = strtok(buffer, ":");
     if (token == NULL) {
         fprintf(stderr, "Error: Malformed book details received from client.\n");
-        close(fd_books);
         exit(EXIT_FAILURE);
     }
     strncpy(name, token, MAX_BOOK_SIZE);
@@ -203,7 +198,6 @@ void update_book(int client_socket) {
     token = strtok(NULL, ":");
     if (token == NULL) {
         fprintf(stderr, "Error: Malformed book details received from client.\n");
-        close(fd_books);
         exit(EXIT_FAILURE);
     }
     strncpy(author, token, MAX_AUTHOR_SIZE);
@@ -211,13 +205,18 @@ void update_book(int client_socket) {
     token = strtok(NULL, ":");
     if (token == NULL) {
         fprintf(stderr, "Error: Malformed book details received from client.\n");
-        close(fd_books);
         exit(EXIT_FAILURE);
     }
     num_copies = atoi(token);
+    // Open the main book file with read-write permission
+    if ((fd_books = open(BOOKS_FILE, O_RDWR)) == -1) {
+        perror("Error opening main book file");
+        exit(EXIT_FAILURE);
+    }
 
     // Acquire locks before reading and writing
-    acquire_lock(fd_books, F_WRLCK);
+    pthread_mutex_lock(&books_mutex);
+
 
     // Search for the book by name and update its details
     Book temp_book;
@@ -235,7 +234,7 @@ void update_book(int client_socket) {
             // Write the updated book record to the main book file
             if (write(fd_books, &temp_book, sizeof(Book)) == -1) {
                 perror("Error updating book record");
-                release_lock(fd_books);
+                pthread_mutex_unlock(&books_mutex);
                 close(fd_books);
                 exit(EXIT_FAILURE);
             }
@@ -249,7 +248,7 @@ void update_book(int client_socket) {
 
   
     // Release locks after reading and writing
-    release_lock(fd_books);
+    pthread_mutex_unlock(&books_mutex);
     close(fd_books);
 
     // Send status back to client
@@ -303,7 +302,8 @@ void update_user(int client_socket) {
         exit(EXIT_FAILURE);
     }
     // Acquire lock before reading and writing
-    acquire_lock(fd, F_WRLCK);
+    pthread_mutex_lock(&users_mutex);
+    
 
     // Search for the user by username and update its details
     User temp_user;
@@ -320,7 +320,7 @@ void update_user(int client_socket) {
             // Write the updated user record to the file
             if (write(fd, &temp_user, sizeof(User)) == -1) {
                 perror("Error updating user record");
-                release_lock(fd);
+                pthread_mutex_unlock(&users_mutex);
                 close(fd);
                 exit(EXIT_FAILURE);
             }
@@ -333,7 +333,7 @@ void update_user(int client_socket) {
     }
 
     // Release lock after reading and writing
-    release_lock(fd);
+    pthread_mutex_unlock(&users_mutex);
     close(fd);
 
     // Send status back to client
@@ -377,7 +377,8 @@ void borrow_book(int client_socket){
     }
 
     // Acquire read lock before reading
-    acquire_lock(fd, F_RDLCK);
+    pthread_mutex_lock(&users_mutex);
+
 
     // Search for the user by name
     int found = 0;
@@ -389,7 +390,8 @@ void borrow_book(int client_socket){
     }
 
     // Release lock after reading
-    release_lock(fd);
+    pthread_mutex_unlock(&users_mutex);
+
     close(fd);
 
     // user not found
@@ -405,7 +407,9 @@ void borrow_book(int client_socket){
         exit(EXIT_FAILURE);
     }
 
-    acquire_lock(fd, F_WRLCK);
+    //acquire_lock
+    pthread_mutex_lock(&books_mutex);
+
     // Search for the book by name
     int book_found = 0;
     while (read(fd, &book, sizeof(Book)) > 0) {
@@ -421,15 +425,15 @@ void borrow_book(int client_socket){
         lseek(fd, -sizeof(Book), SEEK_CUR); // Move back to the beginning of the record
         if (write(fd, &book, sizeof(Book)) == -1) {
             perror("Error updating book record");
-            release_lock(fd);
+            pthread_mutex_unlock(&books_mutex);
             close(fd);
             exit(EXIT_FAILURE);
         }
-        release_lock(fd);
+        pthread_mutex_unlock(&books_mutex);
         close(fd);
     }
     else{
-        release_lock(fd);
+        pthread_mutex_unlock(&books_mutex);
         close(fd);
         write(client_socket, "2", 1);
         return;
@@ -444,15 +448,17 @@ void borrow_book(int client_socket){
     strncpy(borrow.bookname, name, MAX_BOOK_SIZE);
     borrow.returned = 0;
 
-    acquire_lock(fd, F_WRLCK);
+    //acquire_lock
+    pthread_mutex_lock(&borrows_mutex);
+
     if (write(fd, &borrow, sizeof(Borrow)) == -1) {
         perror("Error writing to borrows file");
-        release_lock(fd);
+        pthread_mutex_unlock(&borrows_mutex);
         close(fd);
         exit(EXIT_FAILURE);
     }
+    pthread_mutex_unlock(&borrows_mutex);
 
-    release_lock(fd);
     close(fd);
 
     // success
@@ -491,7 +497,8 @@ void return_book(int client_socket) {
     }
 
     // Acquire write lock before modifying the borrow records
-    acquire_lock(fd_borrows, F_WRLCK);
+    pthread_mutex_lock(&borrows_mutex);
+
 
     // Search for the borrow record by username and book name with returned = 0
     int borrow_found = 0;
@@ -502,7 +509,8 @@ void return_book(int client_socket) {
             lseek(fd_borrows, -sizeof(Borrow), SEEK_CUR); // Move back to the beginning of the record
             if (write(fd_borrows, &borrow, sizeof(Borrow)) == -1) {
                 perror("Error updating borrow record");
-                release_lock(fd_borrows);
+                pthread_mutex_unlock(&borrows_mutex);
+
                 close(fd_borrows);
                 exit(EXIT_FAILURE);
             }
@@ -510,7 +518,8 @@ void return_book(int client_socket) {
         }
     }
 
-    release_lock(fd_borrows);
+    pthread_mutex_unlock(&borrows_mutex);
+
     close(fd_borrows);
 
     if (!borrow_found) {
@@ -525,7 +534,8 @@ void return_book(int client_socket) {
     }
 
     // Acquire write lock before modifying the book records
-    acquire_lock(fd_books, F_WRLCK);
+    pthread_mutex_lock(&books_mutex);
+
 
     // Search for the book by name and update the number of copies
     int book_found = 0;
@@ -536,7 +546,7 @@ void return_book(int client_socket) {
             lseek(fd_books, -sizeof(Book), SEEK_CUR); // Move back to the beginning of the record
             if (write(fd_books, &book, sizeof(Book)) == -1) {
                 perror("Error updating book record");
-                release_lock(fd_books);
+                pthread_mutex_unlock(&books_mutex);
                 close(fd_books);
                 exit(EXIT_FAILURE);
             }
@@ -545,7 +555,7 @@ void return_book(int client_socket) {
     }
 
     // Release lock after modification
-    release_lock(fd_books);
+    pthread_mutex_unlock(&books_mutex);
     close(fd_books);
 
     if (book_found) {
@@ -555,7 +565,7 @@ void return_book(int client_socket) {
     }
 }
 
-void handle_server_admin(int client_socket, char *name) {
+void handle_server_admin(int client_socket) {
     // printf("Handling server admin\n");
     char choice[1];
     int exit = 0;

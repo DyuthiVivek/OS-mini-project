@@ -86,6 +86,7 @@ int login(int sock){
                 sprintf(message_create_user, "%s:%s:%s:", name, phone, password);
 
                 write(sock, message_create_user, strlen(message_create_user));
+
                 read(sock, buffer, 1);
                 
                 // printf("buffer %s\n", buffer);

@@ -18,4 +18,4 @@ typedef struct {
     int returned; // 0 means not returned, 1 means returned
 } Borrow;
 
-void handle_server_admin(int client_socket, char *name);
+void handle_server_admin(int client_socket);

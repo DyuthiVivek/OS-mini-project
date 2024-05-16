@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../include/locking.h"
 #include "../include/server_admin.h"
 #include <fcntl.h>
 #include <errno.h>
@@ -10,6 +9,10 @@
 #include <unistd.h>
 #include "../include/server.h"
 #include <string.h>
+#include <pthread.h>
+
+extern pthread_mutex_t books_mutex;
+extern pthread_mutex_t borrows_mutex;
 
 
 void view_books(int client_socket) {
@@ -26,7 +29,8 @@ void view_books(int client_socket) {
     }
 
     // Acquire shared lock before reading the file
-    acquire_lock(fd, F_RDLCK);
+    pthread_mutex_lock(&books_mutex);
+
 
     // Allocate initial buffer
     buffer = malloc(buffer_size);
@@ -49,7 +53,7 @@ void view_books(int client_socket) {
                 buffer = realloc(buffer, buffer_size);
                 if (buffer == NULL) {
                     perror("Error reallocating memory");
-                    release_lock(fd);
+                    pthread_mutex_unlock(&books_mutex);
                     close(fd);
                     exit(EXIT_FAILURE);
                 }
@@ -60,9 +64,9 @@ void view_books(int client_socket) {
             total_size += details_len;
         }
     }
-
     // Release the lock and close the file
-    release_lock(fd);
+    pthread_mutex_unlock(&books_mutex);
+
     close(fd);
 
     // Send the entire buffer to the client
@@ -85,7 +89,8 @@ void send_borrowed_books(int client_socket, const char *username) {
     }
 
     // Acquire read lock before reading
-    acquire_lock(fd, F_RDLCK);
+    pthread_mutex_lock(&borrows_mutex);
+
 
     // Read through the borrow records and collect book names borrowed by the specified user
     while (read(fd, &borrow, sizeof(Borrow)) > 0) {
@@ -102,7 +107,8 @@ void send_borrowed_books(int client_socket, const char *username) {
     }
 
     // Release lock after reading
-    release_lock(fd);
+    pthread_mutex_unlock(&borrows_mutex);
+
     close(fd);
 
     // Send the collected book names to the client

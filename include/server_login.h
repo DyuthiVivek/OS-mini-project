@@ -15,4 +15,4 @@ typedef struct {
 
 
 int create_user(char *name, char *phone, char *password);
-int authenticate(char *name, char *password, char *filename);
+int authenticate(char *name, char *password, char *filename, pthread_mutex_t mutex);

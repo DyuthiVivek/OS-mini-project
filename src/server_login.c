@@ -7,8 +7,13 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include "../include/server_login.h"
-#include "../include/locking.h"
 #include "../include/server.h"
+#include <pthread.h>
+
+
+extern pthread_mutex_t users_mutex;
+
+
 
 int create_user(char *name, char *phone, char *password) {
     User user;
@@ -21,7 +26,8 @@ int create_user(char *name, char *phone, char *password) {
     }
 
     // Acquire lock before writing the new record
-    acquire_lock(fd, F_WRLCK);
+    pthread_mutex_lock(&users_mutex);
+
 
     // Find the last user ID by seeking to the end of the file
     off_t file_size = lseek(fd, 0, SEEK_END);
@@ -38,13 +44,15 @@ int create_user(char *name, char *phone, char *password) {
     // Write user record to file
     if (write(fd, &user, sizeof(User)) == -1) {
         perror("Error writing to file");
-        release_lock(fd); // Release lock before exiting
+        pthread_mutex_unlock(&users_mutex);
+
         close(fd);
         exit(EXIT_FAILURE);
     }
 
     // Release lock after writing
-    release_lock(fd);
+    pthread_mutex_unlock(&users_mutex);
+
 
     // Close the file
     close(fd);
@@ -52,7 +60,7 @@ int create_user(char *name, char *phone, char *password) {
     return LOGIN_SUCCESS;
 }
 
-int authenticate(char *name, char *password, char *filename) {
+int authenticate(char *name, char *password, char *filename, pthread_mutex_t mutex) {
     User user;
     int fd;
 
@@ -65,7 +73,8 @@ int authenticate(char *name, char *password, char *filename) {
     }
 
     // Acquire read lock before reading
-    acquire_lock(fd, F_RDLCK);
+    pthread_mutex_lock(&mutex);
+
 
     // Search for the user by name
     int found = 0;
@@ -77,7 +86,8 @@ int authenticate(char *name, char *password, char *filename) {
     }
 
     // Release lock after reading
-    release_lock(fd);
+    pthread_mutex_unlock(&mutex);
+
     close(fd);
 
     // printf("name :%s, found : %d\n", user.name, found);
