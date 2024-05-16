@@ -12,7 +12,6 @@
 pthread_mutex_t users_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t admins_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t books_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t copies_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t borrows_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
