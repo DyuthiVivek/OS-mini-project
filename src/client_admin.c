@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "../include/client.h"
 #include "../include/server_admin.h"
+#include "../include/client_user.h"
 
 void print_admin_menu(){
 
@@ -15,7 +16,8 @@ void print_admin_menu(){
     printf("5. Modify user details\n");
     printf("6. Lend book to user\n");
     printf("7. Accept book return from user\n");
-    printf("8. Logout\n");
+    printf("8. View books\n");
+    printf("9. Logout\n");
     printf("************************************\n\n");
 
     printf("Enter choice: ");
@@ -206,9 +208,12 @@ void handle_admin(int sock){
                 }
                 break;
 
-
             case 8:
                 write(sock, "8", 1);
+                view_books(sock);
+                break;
+            case 9:
+                write(sock, "9", 1);
                 printf("Quitting\n");
                 exit = 1;
                 break;

@@ -53,8 +53,8 @@ void view_books(int client_socket) {
                 buffer = realloc(buffer, buffer_size);
                 if (buffer == NULL) {
                     perror("Error reallocating memory");
-                    pthread_mutex_unlock(&books_mutex);
                     close(fd);
+                    pthread_mutex_unlock(&books_mutex);
                     exit(EXIT_FAILURE);
                 }
             }
@@ -64,10 +64,10 @@ void view_books(int client_socket) {
             total_size += details_len;
         }
     }
+    close(fd);
     // Release the lock and close the file
     pthread_mutex_unlock(&books_mutex);
 
-    close(fd);
 
     // Send the entire buffer to the client
     write(client_socket, buffer, 4096);
@@ -106,10 +106,10 @@ void send_borrowed_books(int client_socket, const char *username) {
         }
     }
 
+    close(fd);
     // Release lock after reading
     pthread_mutex_unlock(&borrows_mutex);
 
-    close(fd);
 
     // Send the collected book names to the client
     if (buffer_len > 0) {

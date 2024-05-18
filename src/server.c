@@ -18,6 +18,7 @@ pthread_mutex_t borrows_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define PORT 8080
 #define MAX_CLIENTS 100
 
+// The following thread handles all client connections, with the socket being passed as the argument
 void *handle_client(void *arg) {
     int client_socket = *((int *)arg);
     int ret;
@@ -35,7 +36,7 @@ void *handle_client(void *arg) {
         int option = buffer[0] - '0';
 
         // authenicate admin or user
-        if ((option == 1) || (option) == 2){
+        if ((option == 1) || (option == 2)){
             read(client_socket, message, sizeof(message)); // Read combined message
             token = strtok(message, ":"); // Tokenize the message using separator
             name = token;
@@ -51,7 +52,7 @@ void *handle_client(void *arg) {
             
             write(client_socket, return_buffer, 1);
 
-            if (ret == 0){
+            if (!ret){
                 if (option == 1)
                     handle_server_admin(client_socket);
                 else
@@ -60,7 +61,6 @@ void *handle_client(void *arg) {
             }
 
         }
-
         // create user
         else if (option == 3){
 
@@ -94,8 +94,8 @@ void *handle_client(void *arg) {
 
     }
 
-    printf("One connection closed\n");
     close(client_socket);
+    printf("Connection closed\n");
     return NULL;
 }
 

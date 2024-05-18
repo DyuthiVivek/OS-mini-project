@@ -19,6 +19,8 @@ int create_user(char *name, char *phone, char *password) {
     User user;
     int fd;
 
+    // TODO: check for duplicates
+
     // Open the file with write permission and create if not exists
     if ((fd = open(USERS_FILE, O_RDWR | O_CREAT | O_APPEND, 0644)) == -1) {
         perror("Error opening file");
@@ -50,12 +52,12 @@ int create_user(char *name, char *phone, char *password) {
         exit(EXIT_FAILURE);
     }
 
+    // Close the file
+    close(fd);
     // Release lock after writing
     pthread_mutex_unlock(&users_mutex);
 
 
-    // Close the file
-    close(fd);
 
     return LOGIN_SUCCESS;
 }
@@ -67,7 +69,7 @@ int authenticate(char *name, char *password, char *filename, pthread_mutex_t mut
 
     // Open the file with read permission
     if ((fd = open(filename, O_RDONLY)) == -1) {
-        printf("%s\n", filename);
+        //printf("%s\n", filename);
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
@@ -85,10 +87,10 @@ int authenticate(char *name, char *password, char *filename, pthread_mutex_t mut
         }
     }
 
+    close(fd);
     // Release lock after reading
     pthread_mutex_unlock(&mutex);
 
-    close(fd);
 
     // printf("name :%s, found : %d\n", user.name, found);
 

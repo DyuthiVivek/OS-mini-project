@@ -38,6 +38,8 @@ int main() {
         return -1;
     }
 
+    printf("Welcome to the Online Library Management Service!\n");
+
     from_server = login(sock);
     switch(from_server){
         case 1:
