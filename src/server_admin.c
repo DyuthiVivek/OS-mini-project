@@ -55,7 +55,6 @@ void add_book(int client_socket) {
     pthread_mutex_lock(&books_mutex);
 
     // Set book ID (assuming it's serially increasing)
-    //lseek(fd, 0, SEEK_END);
     new_book.book_id = lseek(fd, 0, SEEK_END) / sizeof(Book) + 1;
 
     // Write the new book record to the file
