@@ -1,3 +1,3 @@
 # OS-mini-project
 
-Library management project using sockets, file handling, file locking with mutex, threading
+Library management project implemented in C using sockets, file handling, file locking with mutex and threading.
